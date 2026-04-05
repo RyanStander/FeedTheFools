@@ -84,11 +84,10 @@ namespace Buildings
                 if (Data.InputAmount > 0)
                 {
                     // Wait until inputs available
-                    //TODO: Connect to resource manager
-                    /*yield return new WaitUntil(() =>
-                        ResourceManager.Instance.Has(Data.InputResource, Data.InputAmount));
+                    yield return new WaitUntil(() =>
+                        HomeManager.Instance.Has(Data.InputResource, Data.InputAmount));
 
-                    ResourceManager.Instance.Spend(Data.InputResource, Data.InputAmount);*/
+                    HomeManager.Instance.Spend(Data.InputResource, Data.InputAmount);
                 }
 
                 yield return new WaitForSeconds(Data.ProductionTime);

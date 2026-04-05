@@ -31,9 +31,9 @@ public class BuildingManager : MonoBehaviour
     {
         if (!CanPlace(cell)) return false;
         //TODO: Connect to resources
-        //if (!ResourceManager.Instance.Has(data.BuildCost)) return false;
+        if (!HomeManager.Instance.Has(data.BuildCost)) return false;
 
-        //ResourceManager.Instance.Spend(data.BuildCost);
+        HomeManager.Instance.Spend(data.BuildCost);
 
         Vector3 worldPos = _grid.CellToWorld(cell);
         worldPos.x +=0;

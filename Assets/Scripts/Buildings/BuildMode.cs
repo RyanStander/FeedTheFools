@@ -44,6 +44,31 @@ namespace Buildings
             {
                 Deactivate();
             }
+            
+            #region Colouring
+
+            bool cellFree = BuildingManager.Instance.CanPlace(cell);
+            bool hasResources = _selected != null && HomeManager.Instance.Has(_selected.BuildCost);
+            bool valid = cellFree && hasResources;
+
+            if (!_active || _selected == null)
+            {
+                // no tint
+            }
+            else if (!hasResources)
+            {
+                _ghostRenderer.color = new Color(1f, 0f, 0f, 0.5f);
+            }
+            else if (!cellFree)
+            {
+                _ghostRenderer.color = new Color(1f, 0.5f, 0f, 0.5f);
+            }
+            else
+            {
+                _ghostRenderer.color = new Color(0f, 1f, 0f, 0.5f);
+            }
+
+            #endregion
         }
 
         public void Activate()
