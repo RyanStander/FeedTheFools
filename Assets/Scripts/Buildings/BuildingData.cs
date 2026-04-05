@@ -26,6 +26,7 @@ namespace Buildings
     public class BuildingData : ScriptableObject
     {
         [Header("Info")]
+        public GameObject Prefab;
         public BuildingType Type;
         public string BuildingName;
         public Sprite Icon;

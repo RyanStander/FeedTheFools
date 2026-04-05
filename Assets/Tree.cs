@@ -11,7 +11,7 @@ public class Tree : MonoBehaviour
     void Start()
     {
         if (treeTilemap == null)
-            treeTilemap = FindObjectOfType<Tilemap>();
+            treeTilemap = gameObject.GetComponentInParent<Tilemap>();
     }
 
     // Update is called once per frame

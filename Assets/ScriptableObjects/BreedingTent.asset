@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2669817b5f345e78106530372d01850, type: 3}
   m_Name: BreedingTent
   m_EditorClassIdentifier: 
+  Prefab: {fileID: 7509913982791380855, guid: 51b714c892e041e45a28a3c27945bb91, type: 3}
   Type: 5
   BuildingName: BreedingTent
   Icon: {fileID: 21300000, guid: 089cbf302ae632b4d806aa44dd2c143d, type: 3}
@@ -19,7 +20,7 @@ MonoBehaviour:
   BuildCost:
   - Type: 0
     Amount: 10
-  - Type: 0
+  - Type: 1
     Amount: 5
   ConstructionTime: 10
   AssignSlots: 1
