@@ -10,7 +10,8 @@ public class Stone : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        if (stoneTilemap == null)
+            stoneTilemap = FindObjectOfType<Tilemap>();
     }
 
     // Update is called once per frame

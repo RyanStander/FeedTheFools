@@ -59,14 +59,12 @@ public class Caveman : MonoBehaviour
     private float birthTime;
     [SerializeField] private float breedCooldown = 30f;
 
-    private List<Tree> availableTrees = new List<Tree>();
-    private List<Coal> availableCoals = new List<Coal>();
-    private List<Stone> availableStones = new List<Stone>();
+    public List<Tree> availableTrees = new List<Tree>();
+    public List<Coal> availableCoals = new List<Coal>();
+    public List<Stone> availableStones = new List<Stone>();
     private Tree currentTree;
     private Coal currentCoal;
     private Stone currentStone;
-
-
 
     void Start()
     {
@@ -372,24 +370,60 @@ public class Caveman : MonoBehaviour
 
     private IEnumerator HarvestResource(ResourceType resourceType, float harvestTime)
     {
-        while (GetTotalCarry() < maxCarryCapacity && currentTree != null)
+        int initialCarry = GetTotalCarry();
+
+        while (GetTotalCarry() < maxCarryCapacity)
         {
-            // Wait until close enough to the tree
-            while (Vector3.Distance(transform.position, currentTree.transform.position) > 0.7f)
+            switch (resourceType)
             {
-                yield return null;
+                case ResourceType.Wood:
+                    FindAndGoToNearestTree();
+                    while (currentTree != null && Vector3.Distance(transform.position, currentTree.transform.position) > 0.7f)
+                        yield return null;
+                    break;
+                case ResourceType.Stone:
+                    FindAndGoToNearestStone();
+                    while (currentStone != null && Vector3.Distance(transform.position, currentStone.transform.position) > 0.7f)
+                        yield return null;
+                    break;
+                case ResourceType.Coal:
+                    FindAndGoToNearestCoal();
+                    while (currentCoal != null && Vector3.Distance(transform.position, currentCoal.transform.position) > 0.7f)
+                        yield return null;
+                    break;
             }
 
             yield return new WaitForSeconds(harvestTime);
-            Debug.Log("harvested 1 resource");
-            AddResource(resourceType, 1);
-            currentTree.HarvestResource();
 
-            if (GetTotalCarry() < maxCarryCapacity)
+            switch (resourceType)
             {
-                FindAndGoToNearestTree();
-                yield return new WaitForSeconds(0.5f);
+                case ResourceType.Wood:
+                    if (currentTree != null)
+                    {
+                        AddResource(ResourceType.Wood, 1);
+                        currentTree.HarvestResource();
+                    }
+                    break;
+                case ResourceType.Stone:
+                    if (currentStone != null)
+                    {
+                        AddResource(ResourceType.Stone, 1);
+                        currentStone.HarvestResource();
+                    }
+                    break;
+                case ResourceType.Coal:
+                    if (currentCoal != null)
+                    {
+                        AddResource(ResourceType.Coal, 1);
+                        currentCoal.HarvestResource();
+                    }
+                    break;
             }
+
+            if (GetTotalCarry() >= maxCarryCapacity)
+                break;
+
+            yield return new WaitForSeconds(0.5f);
         }
     }
 

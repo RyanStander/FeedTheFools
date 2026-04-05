@@ -10,7 +10,8 @@ public class Coal : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-
+        if (coalTilemap == null)
+            coalTilemap = FindObjectOfType<Tilemap>();
     }
 
     // Update is called once per frame
