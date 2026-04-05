@@ -99,7 +99,7 @@ GameObject:
   - component: {fileID: 3260771126572966579}
   m_Layer: 0
   m_Name: Caveman-Ryan
-  m_TagString: Untagged
+  m_TagString: caveman
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -146,7 +146,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 2319334360987574919}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.5
+  m_Radius: 0.05
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
