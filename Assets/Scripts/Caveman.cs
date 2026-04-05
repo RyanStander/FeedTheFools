@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class Caveman : MonoBehaviour
 {
@@ -20,6 +21,7 @@ public class Caveman : MonoBehaviour
         Hunting,
         Building,
         Hungry,
+        Home,
         Breeding
     }
     public CavemanTasks task;
@@ -53,11 +55,22 @@ public class Caveman : MonoBehaviour
     public bool isHungry = false;
     public float hungerMeter = 100;
 
+    public GameObject cavemanPrefab;
+    private float birthTime;
+    [SerializeField] private float breedCooldown = 30f;
+
+    private List<Tree> availableTrees = new List<Tree>();
+    private Tree currentTree;
+
+
+
     void Start()
     {
         hungerMeter = 100;
         nav = GetComponent<CavemanNav>();
         state = CavemanState.Idle;
+        birthTime = Time.time;
+        RefreshTreeList();
     }
 
     void Update()
@@ -78,8 +91,19 @@ public class Caveman : MonoBehaviour
                 
                 if (returningHome)
                 {
-                    DepositResources();
-                    ResetState();
+                    if (task != CavemanTasks.Breeding && task != CavemanTasks.Hungry)
+                    {
+                        DepositResources();
+                    }
+                    
+                    if (task != CavemanTasks.Breeding && task != CavemanTasks.Hungry)
+                    {
+                        ResetState();
+                    }
+                    else
+                    {
+                        ExecuteTask(task);
+                    }
                     returningHome = false;
                 }
                 else
@@ -92,7 +116,6 @@ public class Caveman : MonoBehaviour
         if(isHungry && state != CavemanState.PerformingTask)
         {
             task = CavemanTasks.Hungry;
-            Debug.Log("Caveman is hungry!");
         }
     }
 
@@ -112,6 +135,9 @@ public class Caveman : MonoBehaviour
             case CavemanTasks.Breeding:
                 StartCoroutine(BreedingTask());
                 break;
+            case CavemanTasks.Hungry:
+                StartCoroutine(HungryTask());
+                break;
         }
     }
 
@@ -119,11 +145,65 @@ public class Caveman : MonoBehaviour
     {
         task = CavemanTasks.Gathering;
         currentHarvestResource = resource;
-        targetPosition = targetPos;
-        isMoving = true;
-        state = CavemanState.Walking;
-        arrivedToTarget = false;
-        nav.GoToPosition(targetPos);
+        RefreshTreeList();
+        FindAndGoToNearestTree();
+    }
+
+    private void RefreshTreeList()
+    {
+        availableTrees.Clear();
+        Tree[] allTrees = FindObjectsOfType<Tree>();
+        availableTrees.AddRange(allTrees);
+        Debug.Log("Found " + availableTrees.Count + " trees");
+    }
+
+    private void FindAndGoToNearestTree()
+    {
+        RefreshTreeList();
+        
+        if (availableTrees.Count == 0)
+        {
+            Debug.Log("No trees available!");
+            return;
+        }
+
+        currentTree = availableTrees[0];
+        float nearestDistance = Vector3.Distance(transform.position, currentTree.transform.position);
+
+        foreach (var tree in availableTrees)
+        {
+            if (tree == null) continue;
+            
+            float distance = Vector3.Distance(transform.position, tree.transform.position);
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                currentTree = tree;
+            }
+        }
+
+        if (currentTree != null)
+        {
+            targetPosition = currentTree.transform.position;
+            isMoving = true;
+            state = CavemanState.Walking;
+            arrivedToTarget = false;
+            nav.GoToPosition(targetPosition);
+            Debug.Log("Going to nearest tree at distance: " + nearestDistance);
+        }
+    }
+
+    public void SetBreedingTask()
+    {
+        float timeSinceBirth = Time.time - birthTime;
+        if (timeSinceBirth < breedCooldown)
+        {
+            Debug.Log("currentSelectedCaveman is too young to breed");
+            return;
+        }
+
+        task = CavemanTasks.Breeding;
+        ReturnHome();
     }
 
     private IEnumerator GatheringTask(ResourceType resource)
@@ -153,8 +233,25 @@ public class Caveman : MonoBehaviour
 
     private IEnumerator BreedingTask()
     {
+        Debug.Log("BREEEEEDING");
         isPerformingTask = true;
+        state = CavemanState.PerformingTask;
+        int breedTime = UnityEngine.Random.Range(3, 10);
+        yield return new WaitForSeconds(breedTime);
+        var newCaveman = Instantiate(cavemanPrefab, transform.position, Quaternion.identity);
+        newCaveman.transform.position = new Vector3(transform.position.x + 1f, transform.position.y, transform.position.z);
+        birthTime = Time.time;
+        isPerformingTask = false;
+        ReturnHome();
+    }
+
+    private IEnumerator HungryTask()
+    {
+        isPerformingTask = true;
+        state = CavemanState.PerformingTask;
         yield return new WaitForSeconds(2f);
+        hungerMeter = 100;
+        isHungry = false;
         isPerformingTask = false;
         ReturnHome();
     }
@@ -171,7 +268,7 @@ public class Caveman : MonoBehaviour
 
     private void ResetState()
     {
-        task = CavemanTasks.Gathering;
+        task = CavemanTasks.Home;
         state = CavemanState.Idle;
         isMoving = false;
         isPerformingTask = false;
@@ -184,11 +281,24 @@ public class Caveman : MonoBehaviour
 
     private IEnumerator HarvestResource(ResourceType resourceType, float harvestTime)
     {
-        while (GetTotalCarry() < maxCarryCapacity)
+        while (GetTotalCarry() < maxCarryCapacity && currentTree != null)
         {
+            // Wait until close enough to the tree
+            while (Vector3.Distance(transform.position, currentTree.transform.position) > 0.7f)
+            {
+                yield return null;
+            }
+
             yield return new WaitForSeconds(harvestTime);
             Debug.Log("harvested 1 resource");
             AddResource(resourceType, 1);
+            currentTree.HarvestResource();
+
+            if (GetTotalCarry() < maxCarryCapacity)
+            {
+                FindAndGoToNearestTree();
+                yield return new WaitForSeconds(0.5f);
+            }
         }
     }
 
@@ -211,7 +321,7 @@ public class Caveman : MonoBehaviour
     public void DepositResources()
     {
         HomeManager.Instance.AddResources(woodCount, stoneCount, coalCount);
-        Debug.Log("deposited resources wood: " + woodCount + ", stone: " + stoneCount + ", coal: " + coalCount);
+        Debug.Log("transfering resources wood: " + woodCount + ", stone: " + stoneCount + ", coal: " + coalCount);
         woodCount = 0;
         stoneCount = 0;
         coalCount = 0;

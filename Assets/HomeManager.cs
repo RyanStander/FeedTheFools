@@ -21,18 +21,6 @@ public class HomeManager : MonoBehaviour
 
         Instance = this;
     }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
     public void AddResources(int woodCount, int stoneCount, int coalCount)
     {
         homeWoodCount += woodCount;
