@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2669817b5f345e78106530372d01850, type: 3}
+  m_Name: BreedingTent
+  m_EditorClassIdentifier: 
+  Type: 5
+  BuildingName: BreedingTent
+  Icon: {fileID: 21300000, guid: 089cbf302ae632b4d806aa44dd2c143d, type: 3}
+  BuildingSprite: {fileID: 21300000, guid: 089cbf302ae632b4d806aa44dd2c143d, type: 3}
+  BuildCost:
+  - Type: 0
+    Amount: 10
+  - Type: 0
+    Amount: 5
+  ConstructionTime: 10
+  AssignSlots: 1
+  InputResource: 0
+  InputAmount: 0
+  OutputResource: 0
+  OutputAmount: 0
+  ProductionTime: 90
