@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Rocks
   m_EditorClassIdentifier: 
   m_DefaultSprite: {fileID: 21300000, guid: ff8eae7e570a58b418cfa9a6ad59c457, type: 3}
-  m_DefaultGameObject: {fileID: 0}
+  m_DefaultGameObject: {fileID: 6478393492097957523, guid: cf7961980c71e1e4e8fd8bad2643a3e7, type: 3}
   m_DefaultColliderType: 1
   m_TilingRules:
   - m_Id: 0

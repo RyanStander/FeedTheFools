@@ -24,8 +24,6 @@ public class Tree : MonoBehaviour
     {
         Debug.Log("Tree harvested!");
         HarvestTreeAtWorldPosition(this.transform.position);
-
-
     }
 
     public void HarvestTreeAtWorldPosition(Vector3 worldPos)

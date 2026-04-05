@@ -60,7 +60,11 @@ public class Caveman : MonoBehaviour
     [SerializeField] private float breedCooldown = 30f;
 
     private List<Tree> availableTrees = new List<Tree>();
+    private List<Coal> availableCoals = new List<Coal>();
+    private List<Stone> availableStones = new List<Stone>();
     private Tree currentTree;
+    private Coal currentCoal;
+    private Stone currentStone;
 
 
 
@@ -71,6 +75,8 @@ public class Caveman : MonoBehaviour
         state = CavemanState.Idle;
         birthTime = Time.time;
         RefreshTreeList();
+        RefreshCoalList();
+        RefreshStoneList();
     }
 
     void Update()
@@ -154,7 +160,20 @@ public class Caveman : MonoBehaviour
         availableTrees.Clear();
         Tree[] allTrees = FindObjectsOfType<Tree>();
         availableTrees.AddRange(allTrees);
-        Debug.Log("Found " + availableTrees.Count + " trees");
+    }
+
+    private void RefreshStoneList()
+    {
+        availableStones.Clear();
+        Stone[] allStones = FindObjectsOfType<Stone>();
+        availableStones.AddRange(allStones);
+    }
+
+    private void RefreshCoalList()
+    {
+        availableCoals.Clear();
+        Coal[] allCoals = FindObjectsOfType<Coal>();
+        availableCoals.AddRange(allCoals);
     }
 
     private void FindAndGoToNearestTree()
@@ -189,7 +208,79 @@ public class Caveman : MonoBehaviour
             state = CavemanState.Walking;
             arrivedToTarget = false;
             nav.GoToPosition(targetPosition);
-            Debug.Log("Going to nearest tree at distance: " + nearestDistance);
+            Debug.Log("Going to nearest tree at " + nearestDistance);
+        }
+    }
+
+    private void FindAndGoToNearestStone()
+    {
+        RefreshStoneList();
+
+        if (availableStones.Count == 0)
+        {
+            Debug.Log("No stones available");
+            return;
+        }
+
+        currentStone = availableStones[0];
+        float nearestDistance = Vector3.Distance(transform.position, currentStone.transform.position);
+
+        foreach (var stone in availableStones)
+        {
+            if (stone == null) continue;
+
+            float distance = Vector3.Distance(transform.position, stone.transform.position);
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                currentStone = stone;
+            }
+        }
+
+        if (currentStone != null)
+        {
+            targetPosition = currentStone.transform.position;
+            isMoving = true;
+            state = CavemanState.Walking;
+            arrivedToTarget = false;
+            nav.GoToPosition(targetPosition);
+            Debug.Log("Going to nearest stone at " + nearestDistance);
+        }
+    }
+
+    private void FindAndGoToNearestCoal()
+    {
+        RefreshCoalList();
+
+        if (availableCoals.Count == 0)
+        {
+            Debug.Log("No coals available");
+            return;
+        }
+
+        currentCoal = availableCoals[0];
+        float nearestDistance = Vector3.Distance(transform.position, currentCoal.transform.position);
+
+        foreach (var coal in availableCoals)
+        {
+            if (coal == null) continue;
+
+            float distance = Vector3.Distance(transform.position, coal.transform.position);
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                currentCoal = coal;
+            }
+        }
+
+        if (currentCoal != null)
+        {
+            targetPosition = currentCoal.transform.position;
+            isMoving = true;
+            state = CavemanState.Walking;
+            arrivedToTarget = false;
+            nav.GoToPosition(targetPosition);
+            Debug.Log("Going to nearest coal at distance" + nearestDistance);
         }
     }
 

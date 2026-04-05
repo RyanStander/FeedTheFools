@@ -6,6 +6,8 @@ TagManager:
   tags:
   - caveman
   - Tree
+  - stone
+  - Coal
   layers:
   - Default
   - TransparentFX
