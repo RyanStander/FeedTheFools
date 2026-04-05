@@ -11,7 +11,7 @@ public class Coal : MonoBehaviour
     void Start()
     {
         if (coalTilemap == null)
-            coalTilemap = FindObjectOfType<Tilemap>();
+            coalTilemap =  gameObject.GetComponentInParent<Tilemap>();
     }
 
     // Update is called once per frame

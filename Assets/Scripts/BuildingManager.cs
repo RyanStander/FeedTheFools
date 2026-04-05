@@ -30,17 +30,17 @@ public class BuildingManager : MonoBehaviour
     public bool TryPlace(BuildingData data, Vector3Int cell)
     {
         if (!CanPlace(cell)) return false;
-        //TODO: Connect to resources
-        //if (!ResourceManager.Instance.Has(data.BuildCost)) return false;
+        if (!HomeManager.Instance.Has(data.BuildCost)) return false;
 
-        //ResourceManager.Instance.Spend(data.BuildCost);
+        HomeManager.Instance.Spend(data.BuildCost);
 
         Vector3 worldPos = _grid.CellToWorld(cell);
-        worldPos.x +=0;
+        worldPos.x -= _grid.cellSize.x;
         worldPos.y += _grid.cellSize.y;
         worldPos.z = 0;
-        
-        var go = Instantiate(_buildingPrefab, worldPos, Quaternion.identity);
+
+        GameObject prefabToSpawn = data.Prefab != null ? data.Prefab : _buildingPrefab;
+        var go = Instantiate(prefabToSpawn, worldPos, Quaternion.identity);
         var building = go.GetComponent<Building>();
         building.Init(data);
 
@@ -56,6 +56,14 @@ public class BuildingManager : MonoBehaviour
     {
         if (!_placedBuildings.Contains(building))
             _placedBuildings.Add(building);
+    }
+    
+    public bool BuildingExists(BuildingType type)
+    {
+        foreach (var b in _placedBuildings)
+            if (b.Data.Type == type && !b.IsUnderConstruction)
+                return true;
+        return false;
     }
     
     public Vector3Int WorldToCell(Vector3 worldPos) => _grid.WorldToCell(worldPos);

@@ -152,22 +152,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   state: 0
   task: 0
-  currentPosition: {x: 0, y: 0, z: 0}
-  targetPosition: {x: 0, y: 0, z: 0}
   homePosition: {fileID: 0}
-  isMoving: 0
-  arrivedToTarget: 0
-  arrivalDistance: 0.5
+  arrivalDistance: 0.1
   maxCarryCapacity: 3
   woodCount: 0
   stoneCount: 0
   coalCount: 0
-  treeResourceTestPos: {fileID: 0}
-  isPerformingTask: 0
-  nav: {fileID: 0}
-  isHungry: 0
   hungerMeter: 100
+  isHungry: 0
   cavemanPrefab: {fileID: 4799226333256342377}
+  babyPrefab: {fileID: 4799226333256342377}
+  breedCooldown: 30
+  nav: {fileID: 0}
+  isPerformingTask: 0
+  availableTrees: []
+  availableCoals: []
+  availableStones: []
 --- !u!61 &5356068159170927566
 BoxCollider2D:
   m_ObjectHideFlags: 0

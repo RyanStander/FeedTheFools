@@ -1,63 +1,42 @@
 using Navigation;
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using Buildings;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class Caveman : MonoBehaviour
 {
-    public enum CavemanState
-    {
-        Idle,
-        Walking,
-        PerformingTask
-    }
-    public CavemanState state;
+    public enum CavemanState { Idle, Walking, PerformingTask }
+    public enum CavemanTasks { Gathering, Hunting, Building, Hungry, Home, Breeding }
+    public enum ResourceType { Wood, Stone, Coal }
 
-    public enum CavemanTasks
-    {
-        Gathering,
-        Hunting,
-        Building,
-        Hungry,
-        Home,
-        Breeding
-    }
+    public CavemanState state;
     public CavemanTasks task;
 
-    public enum ResourceType
-    {
-        Wood,
-        Stone,
-        Coal
-    }
-
-    public Vector3 currentPosition;
-    public Vector3 targetPosition;
+    [Header("Movement")]
     public Transform homePosition;
-
-    public bool isMoving = false;
-    public bool arrivedToTarget;
     [SerializeField] private float arrivalDistance = 0.5f;
-    [SerializeField] private int maxCarryCapacity = 3;
 
+    [Header("Carrying")]
+    [SerializeField] private int maxCarryCapacity = 3;
     public int woodCount = 0;
     public int stoneCount = 0;
     public int coalCount = 0;
 
-    public Transform treeResourceTestPos;
+    [Header("Hunger")]
+    public float hungerMeter = 100f;
+    public bool isHungry = false;
+
+    [Header("Breeding")]
+    public GameObject babyPrefab;
+    [SerializeField] private float breedCooldown = 30f;
+    private float birthTime;
+
+    // Internal
+    public CavemanNav nav;
     public bool isPerformingTask;
     private ResourceType currentHarvestResource;
-    private bool returningHome = false;
-    public CavemanNav nav;
-
-    public bool isHungry = false;
-    public float hungerMeter = 100;
-
-    public GameObject cavemanPrefab;
-    private float birthTime;
-    [SerializeField] private float breedCooldown = 30f;
+    private Coroutine _activeCoroutine;
 
     public List<Tree> availableTrees = new List<Tree>();
     public List<Coal> availableCoals = new List<Coal>();
@@ -68,387 +47,334 @@ public class Caveman : MonoBehaviour
 
     void Start()
     {
-        hungerMeter = 100;
         nav = GetComponent<CavemanNav>();
         state = CavemanState.Idle;
+        task = CavemanTasks.Home;
         birthTime = Time.time;
-        RefreshTreeList();
-        RefreshCoalList();
-        RefreshStoneList();
+        hungerMeter = 100f;
+
+        if (homePosition == null) homePosition = homePosition = HomeManager.Instance.transform;;
     }
 
     void Update()
     {
+        // Tick hunger
         hungerMeter -= Time.deltaTime;
-        if (hungerMeter <= 0)
+        if (hungerMeter <= 0f)
         {
-            hungerMeter = 0;
-            isHungry = true;
-        }
-
-        if (isMoving && !arrivedToTarget)
-        {
-            if (Vector3.Distance(transform.position, targetPosition) < arrivalDistance)
+            hungerMeter = 0f;
+            if (!isHungry)
             {
-                isMoving = false;
-                arrivedToTarget = true;
-                
-                if (returningHome)
-                {
-                    if (task != CavemanTasks.Breeding && task != CavemanTasks.Hungry)
-                    {
-                        DepositResources();
-                    }
-                    
-                    if (task != CavemanTasks.Breeding && task != CavemanTasks.Hungry)
-                    {
-                        ResetState();
-                    }
-                    else
-                    {
-                        ExecuteTask(task);
-                    }
-                    returningHome = false;
-                }
-                else
-                {
-                    ExecuteTask(task);
-                }
+                isHungry = true;
+                if (state != CavemanState.PerformingTask)
+                    StartTaskCoroutine(HungryTask());
             }
         }
-
-        if(isHungry && state != CavemanState.PerformingTask)
-        {
-            task = CavemanTasks.Hungry;
-        }
     }
 
-    public void ExecuteTask(CavemanTasks task)
-    {
-        switch(task)
-        {
-            case CavemanTasks.Gathering:
-                StartCoroutine(GatheringTask(currentHarvestResource));
-                break;
-            case CavemanTasks.Hunting:
-                StartCoroutine(HuntingTask());
-                break;
-            case CavemanTasks.Building:
-                StartCoroutine(BuildingTask());
-                break;
-            case CavemanTasks.Breeding:
-                StartCoroutine(BreedingTask());
-                break;
-            case CavemanTasks.Hungry:
-                StartCoroutine(HungryTask());
-                break;
-        }
-    }
+    // ── Task entry points ──
 
-    public void SetGatheringTask(Vector3 targetPos, ResourceType resource)
+    public void SetGatheringTask(ResourceType resource)
     {
+        if (isPerformingTask) return;
         task = CavemanTasks.Gathering;
         currentHarvestResource = resource;
-        RefreshTreeList();
-        FindAndGoToNearestTree();
-    }
-
-    private void RefreshTreeList()
-    {
-        availableTrees.Clear();
-        Tree[] allTrees = FindObjectsOfType<Tree>();
-        availableTrees.AddRange(allTrees);
-    }
-
-    private void RefreshStoneList()
-    {
-        availableStones.Clear();
-        Stone[] allStones = FindObjectsOfType<Stone>();
-        availableStones.AddRange(allStones);
-    }
-
-    private void RefreshCoalList()
-    {
-        availableCoals.Clear();
-        Coal[] allCoals = FindObjectsOfType<Coal>();
-        availableCoals.AddRange(allCoals);
-    }
-
-    private void FindAndGoToNearestTree()
-    {
-        RefreshTreeList();
-        
-        if (availableTrees.Count == 0)
-        {
-            Debug.Log("No trees available!");
-            return;
-        }
-
-        currentTree = availableTrees[0];
-        float nearestDistance = Vector3.Distance(transform.position, currentTree.transform.position);
-
-        foreach (var tree in availableTrees)
-        {
-            if (tree == null) continue;
-            
-            float distance = Vector3.Distance(transform.position, tree.transform.position);
-            if (distance < nearestDistance)
-            {
-                nearestDistance = distance;
-                currentTree = tree;
-            }
-        }
-
-        if (currentTree != null)
-        {
-            targetPosition = currentTree.transform.position;
-            isMoving = true;
-            state = CavemanState.Walking;
-            arrivedToTarget = false;
-            nav.GoToPosition(targetPosition);
-            Debug.Log("Going to nearest tree at " + nearestDistance);
-        }
-    }
-
-    private void FindAndGoToNearestStone()
-    {
-        RefreshStoneList();
-
-        if (availableStones.Count == 0)
-        {
-            Debug.Log("No stones available");
-            return;
-        }
-
-        currentStone = availableStones[0];
-        float nearestDistance = Vector3.Distance(transform.position, currentStone.transform.position);
-
-        foreach (var stone in availableStones)
-        {
-            if (stone == null) continue;
-
-            float distance = Vector3.Distance(transform.position, stone.transform.position);
-            if (distance < nearestDistance)
-            {
-                nearestDistance = distance;
-                currentStone = stone;
-            }
-        }
-
-        if (currentStone != null)
-        {
-            targetPosition = currentStone.transform.position;
-            isMoving = true;
-            state = CavemanState.Walking;
-            arrivedToTarget = false;
-            nav.GoToPosition(targetPosition);
-            Debug.Log("Going to nearest stone at " + nearestDistance);
-        }
-    }
-
-    private void FindAndGoToNearestCoal()
-    {
-        RefreshCoalList();
-
-        if (availableCoals.Count == 0)
-        {
-            Debug.Log("No coals available");
-            return;
-        }
-
-        currentCoal = availableCoals[0];
-        float nearestDistance = Vector3.Distance(transform.position, currentCoal.transform.position);
-
-        foreach (var coal in availableCoals)
-        {
-            if (coal == null) continue;
-
-            float distance = Vector3.Distance(transform.position, coal.transform.position);
-            if (distance < nearestDistance)
-            {
-                nearestDistance = distance;
-                currentCoal = coal;
-            }
-        }
-
-        if (currentCoal != null)
-        {
-            targetPosition = currentCoal.transform.position;
-            isMoving = true;
-            state = CavemanState.Walking;
-            arrivedToTarget = false;
-            nav.GoToPosition(targetPosition);
-            Debug.Log("Going to nearest coal at distance" + nearestDistance);
-        }
+        StartTaskCoroutine(GatheringTask(resource));
     }
 
     public void SetBreedingTask()
     {
-        float timeSinceBirth = Time.time - birthTime;
-        if (timeSinceBirth < breedCooldown)
+        if (Time.time - birthTime < breedCooldown)
         {
-            Debug.Log("currentSelectedCaveman is too young to breed");
+            Debug.Log("Too young to breed");
+            return;
+        }
+
+        if (!BuildingManager.Instance.BuildingExists(BuildingType.BreedingTent))
+        {
+            Debug.Log("No breeding tent built yet");
             return;
         }
 
         task = CavemanTasks.Breeding;
-        ReturnHome();
+        StartTaskCoroutine(BreedingTask());
     }
+
+    private void StartTaskCoroutine(IEnumerator routine)
+    {
+        if (_activeCoroutine != null)
+            StopCoroutine(_activeCoroutine);
+        _activeCoroutine = StartCoroutine(routine);
+    }
+
+    // ── Movement helpers ──
+
+    private IEnumerator MoveTo(Vector3 destination)
+    {
+        nav.GoToPosition(destination);
+        state = CavemanState.Walking;
+
+        while (Vector3.Distance(transform.position, destination) > arrivalDistance)
+            yield return null;
+
+        state = CavemanState.Idle;
+    }
+
+    private IEnumerator MoveToTransform(Transform target)
+    {
+        // Keep updating destination in case target moves
+        nav.GoToPosition(target.position);
+        state = CavemanState.Walking;
+
+        while (target != null && Vector3.Distance(transform.position, target.position) > arrivalDistance)
+        {
+            nav.GoToPosition(target.position);
+            yield return null;
+        }
+
+        state = CavemanState.Idle;
+    }
+
+    // ── Task coroutines ──
 
     private IEnumerator GatheringTask(ResourceType resource)
     {
         isPerformingTask = true;
         state = CavemanState.PerformingTask;
-        yield return HarvestResource(resource, 2f);
-        isPerformingTask = false;
-        ReturnHome();
+
+        while (GetTotalCarry() < maxCarryCapacity)
+        {
+            // Find nearest resource
+            bool found = FindNearestResource(resource);
+            if (!found)
+            {
+                Debug.Log("No resources available for " + resource);
+                break;
+            }
+
+            // Move to resource
+            Vector3 resourcePos = GetCurrentResourcePosition(resource);
+            yield return MoveTo(resourcePos);
+
+            // Harvest
+            yield return new WaitForSeconds(2f);
+            HarvestCurrentResource(resource);
+
+            if (GetTotalCarry() >= maxCarryCapacity) break;
+            yield return new WaitForSeconds(0.3f);
+        }
+
+        // Return home and deposit
+        yield return ReturnHome();
+        DepositResources();
+        ResetState();
     }
 
     private IEnumerator HuntingTask()
     {
         isPerformingTask = true;
+        state = CavemanState.PerformingTask;
         yield return new WaitForSeconds(2f);
-        isPerformingTask = false;
-        ReturnHome();
+        yield return ReturnHome();
+        ResetState();
     }
 
     private IEnumerator BuildingTask()
     {
         isPerformingTask = true;
+        state = CavemanState.PerformingTask;
         yield return new WaitForSeconds(2f);
-        isPerformingTask = false;
-        ReturnHome();
+        yield return ReturnHome();
+        ResetState();
     }
 
     private IEnumerator BreedingTask()
     {
-        Debug.Log("BREEEEEDING");
         isPerformingTask = true;
         state = CavemanState.PerformingTask;
+
+        // Find the breeding tent
+        BreedingTent tent = FindObjectOfType<BreedingTent>();
+        if (tent == null)
+        {
+            Debug.LogError("No breeding tent found");
+            ResetState();
+            yield break;
+        }
+
+        // Walk to tent
+        yield return MoveTo(tent.transform.position);
+
         int breedTime = UnityEngine.Random.Range(3, 10);
         yield return new WaitForSeconds(breedTime);
-        var newCaveman = Instantiate(cavemanPrefab, transform.position, Quaternion.identity);
-        newCaveman.transform.position = new Vector3(transform.position.x + 1f, transform.position.y, transform.position.z);
+
+        if (babyPrefab != null)
+            Instantiate(babyPrefab,
+                tent.transform.position + new Vector3(1f, 0f, 0f),
+                Quaternion.identity);
+        else
+            Debug.LogError("babyPrefab not assigned on " + gameObject.name);
+
         birthTime = Time.time;
-        isPerformingTask = false;
-        ReturnHome();
+
+        // Return home after breeding
+        yield return ReturnHome();
+        ResetState();
     }
 
     private IEnumerator HungryTask()
     {
         isPerformingTask = true;
         state = CavemanState.PerformingTask;
+
+        yield return ReturnHome();
+
         yield return new WaitForSeconds(2f);
-        hungerMeter = 100;
+        hungerMeter = 100f;
         isHungry = false;
-        isPerformingTask = false;
-        ReturnHome();
+
+        ResetState();
     }
 
-    public void ReturnHome()
+    // ── Return home ──
+
+    private IEnumerator ReturnHome()
     {
-        targetPosition = homePosition.position;
-        isMoving = true;
-        state = CavemanState.Walking;
-        arrivedToTarget = false;
-        returningHome = true;
-        nav.GoToPosition(homePosition.position);
+        if (homePosition == null)
+        {
+            Debug.LogError("homePosition is null on " + gameObject.name);
+            yield break;
+        }
+
+        yield return MoveTo(homePosition.position);
+    }
+
+    // ── Resource helpers ──
+
+    private bool FindNearestResource(ResourceType resource)
+    {
+        switch (resource)
+        {
+            case ResourceType.Wood:
+                RefreshTreeList();
+                currentTree = GetNearest(availableTrees, t => t.transform.position);
+                return currentTree != null;
+            case ResourceType.Stone:
+                RefreshStoneList();
+                currentStone = GetNearest(availableStones, s => s.transform.position);
+                return currentStone != null;
+            case ResourceType.Coal:
+                RefreshCoalList();
+                currentCoal = GetNearest(availableCoals, c => c.transform.position);
+                return currentCoal != null;
+        }
+        return false;
+    }
+
+    private Vector3 GetCurrentResourcePosition(ResourceType resource)
+    {
+        switch (resource)
+        {
+            case ResourceType.Wood:  return currentTree  != null ? currentTree.transform.position  : transform.position;
+            case ResourceType.Stone: return currentStone != null ? currentStone.transform.position : transform.position;
+            case ResourceType.Coal:  return currentCoal  != null ? currentCoal.transform.position  : transform.position;
+        }
+        return transform.position;
+    }
+
+    private void HarvestCurrentResource(ResourceType resource)
+    {
+        switch (resource)
+        {
+            case ResourceType.Wood:
+                if (currentTree != null)
+                {
+                    AddResource(ResourceType.Wood, 1);
+                    currentTree.HarvestResource();
+                    currentTree = null;
+                }
+                break;
+            case ResourceType.Stone:
+                if (currentStone != null)
+                {
+                    AddResource(ResourceType.Stone, 1);
+                    currentStone.HarvestResource();
+                    currentStone = null;
+                }
+                break;
+            case ResourceType.Coal:
+                if (currentCoal != null)
+                {
+                    AddResource(ResourceType.Coal, 1);
+                    currentCoal.HarvestResource();
+                    currentCoal = null;
+                }
+                break;
+        }
+    }
+
+    private T GetNearest<T>(List<T> list, System.Func<T, Vector3> positionGetter) where T : UnityEngine.Object
+    {
+        T nearest = null;
+        float nearestDist = float.MaxValue;
+
+        foreach (var item in list)
+        {
+            if (item == null) continue;
+            float dist = Vector3.Distance(transform.position, positionGetter(item));
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = item;
+            }
+        }
+        return nearest;
+    }
+
+    private void RefreshTreeList()
+    {
+        availableTrees.Clear();
+        availableTrees.AddRange(FindObjectsOfType<Tree>());
+    }
+
+    private void RefreshStoneList()
+    {
+        availableStones.Clear();
+        availableStones.AddRange(FindObjectsOfType<Stone>());
+    }
+
+    private void RefreshCoalList()
+    {
+        availableCoals.Clear();
+        availableCoals.AddRange(FindObjectsOfType<Coal>());
+    }
+
+    private void AddResource(ResourceType resourceType, int amount)
+    {
+        switch (resourceType)
+        {
+            case ResourceType.Wood:  woodCount  += amount; break;
+            case ResourceType.Stone: stoneCount += amount; break;
+            case ResourceType.Coal:  coalCount  += amount; break;
+        }
+    }
+
+    private int GetTotalCarry() => woodCount + stoneCount + coalCount;
+
+    public void DepositResources()
+    {
+        HomeManager.Instance.AddResources(woodCount, stoneCount, coalCount);
+        Debug.Log($"Depositing — wood: {woodCount}, stone: {stoneCount}, coal: {coalCount}");
+        woodCount = 0;
+        stoneCount = 0;
+        coalCount = 0;
     }
 
     private void ResetState()
     {
         task = CavemanTasks.Home;
         state = CavemanState.Idle;
-        isMoving = false;
         isPerformingTask = false;
-    }
-
-    private int GetTotalCarry()
-    {
-        return woodCount + stoneCount + coalCount;
-    }
-
-    private IEnumerator HarvestResource(ResourceType resourceType, float harvestTime)
-    {
-        int initialCarry = GetTotalCarry();
-
-        while (GetTotalCarry() < maxCarryCapacity)
-        {
-            switch (resourceType)
-            {
-                case ResourceType.Wood:
-                    FindAndGoToNearestTree();
-                    while (currentTree != null && Vector3.Distance(transform.position, currentTree.transform.position) > 0.7f)
-                        yield return null;
-                    break;
-                case ResourceType.Stone:
-                    FindAndGoToNearestStone();
-                    while (currentStone != null && Vector3.Distance(transform.position, currentStone.transform.position) > 0.7f)
-                        yield return null;
-                    break;
-                case ResourceType.Coal:
-                    FindAndGoToNearestCoal();
-                    while (currentCoal != null && Vector3.Distance(transform.position, currentCoal.transform.position) > 0.7f)
-                        yield return null;
-                    break;
-            }
-
-            yield return new WaitForSeconds(harvestTime);
-
-            switch (resourceType)
-            {
-                case ResourceType.Wood:
-                    if (currentTree != null)
-                    {
-                        AddResource(ResourceType.Wood, 1);
-                        currentTree.HarvestResource();
-                    }
-                    break;
-                case ResourceType.Stone:
-                    if (currentStone != null)
-                    {
-                        AddResource(ResourceType.Stone, 1);
-                        currentStone.HarvestResource();
-                    }
-                    break;
-                case ResourceType.Coal:
-                    if (currentCoal != null)
-                    {
-                        AddResource(ResourceType.Coal, 1);
-                        currentCoal.HarvestResource();
-                    }
-                    break;
-            }
-
-            if (GetTotalCarry() >= maxCarryCapacity)
-                break;
-
-            yield return new WaitForSeconds(0.5f);
-        }
-    }
-
-    private void AddResource(ResourceType resourceType, int amount)
-    {
-        switch(resourceType)
-        {
-            case ResourceType.Wood:
-                woodCount += amount;
-                break;
-            case ResourceType.Stone:
-                stoneCount += amount;
-                break;
-            case ResourceType.Coal:
-                coalCount += amount;
-                break;
-        }
-    }
-
-    public void DepositResources()
-    {
-        HomeManager.Instance.AddResources(woodCount, stoneCount, coalCount);
-        Debug.Log("transfering resources wood: " + woodCount + ", stone: " + stoneCount + ", coal: " + coalCount);
-        woodCount = 0;
-        stoneCount = 0;
-        coalCount = 0;
+        _activeCoroutine = null;
     }
 }

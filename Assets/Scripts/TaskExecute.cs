@@ -22,24 +22,19 @@ public class TaskExecute : MonoBehaviour
             }
         }
 
-        if (currentSelectedCaveman != null && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+        if (currentSelectedCaveman != null && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1))
-            {
-                currentSelectedCaveman.SetGatheringTask(Vector3.zero, Caveman.ResourceType.Wood);
-            }
+                currentSelectedCaveman.SetGatheringTask(Caveman.ResourceType.Wood);
+
             if (Input.GetKeyDown(KeyCode.Alpha2))
-            {
-                currentSelectedCaveman.SetGatheringTask(Vector3.zero, Caveman.ResourceType.Stone);
-            }
+                currentSelectedCaveman.SetGatheringTask(Caveman.ResourceType.Stone);
+
             if (Input.GetKeyDown(KeyCode.Alpha3))
-            {
-                currentSelectedCaveman.SetGatheringTask(Vector3.zero, Caveman.ResourceType.Coal);
-            }
+                currentSelectedCaveman.SetGatheringTask(Caveman.ResourceType.Coal);
+
             if (Input.GetKeyDown(KeyCode.Alpha4))
-            {
                 currentSelectedCaveman.SetBreedingTask();
-            }
         }
     }
 }

@@ -27,8 +27,27 @@ namespace Buildings
             Cell = BuildingManager.Instance.WorldToCell(transform.position);
             IsUnderConstruction = true;
             ConstructionProgress = 0f;
+
             if (data.BuildingSprite != null)
                 _renderer.sprite = data.BuildingSprite;
+
+            StartCoroutine(AutoConstructRoutine());
+        }
+
+        private IEnumerator AutoConstructRoutine()
+        {
+            float elapsed = 0f;
+            while (elapsed < Data.ConstructionTime)
+            {
+                elapsed += Time.deltaTime;
+                ConstructionProgress = elapsed / Data.ConstructionTime;
+                yield return null;
+            }
+
+            ConstructionProgress = 1f;
+            IsUnderConstruction = false;
+            BuildingManager.Instance.RegisterBuilding(this);
+            Debug.Log($"{Data.BuildingName} construction complete");
         }
 
         #region Assignment
@@ -84,11 +103,10 @@ namespace Buildings
                 if (Data.InputAmount > 0)
                 {
                     // Wait until inputs available
-                    //TODO: Connect to resource manager
-                    /*yield return new WaitUntil(() =>
-                        ResourceManager.Instance.Has(Data.InputResource, Data.InputAmount));
+                    yield return new WaitUntil(() =>
+                        HomeManager.Instance.Has(Data.InputResource, Data.InputAmount));
 
-                    ResourceManager.Instance.Spend(Data.InputResource, Data.InputAmount);*/
+                    HomeManager.Instance.Spend(Data.InputResource, Data.InputAmount);
                 }
 
                 yield return new WaitForSeconds(Data.ProductionTime);

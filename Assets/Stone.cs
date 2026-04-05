@@ -11,7 +11,7 @@ public class Stone : MonoBehaviour
     void Start()
     {
         if (stoneTilemap == null)
-            stoneTilemap = FindObjectOfType<Tilemap>();
+            stoneTilemap =  gameObject.GetComponentInParent<Tilemap>();
     }
 
     // Update is called once per frame

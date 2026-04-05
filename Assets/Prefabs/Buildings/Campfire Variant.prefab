@@ -55,5 +55,28 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 149271041750455544, guid: b5f92c26506b5c34eac0211dd5a9d59a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6172020040939890681}
   m_SourcePrefab: {fileID: 100100000, guid: b5f92c26506b5c34eac0211dd5a9d59a, type: 3}
+--- !u!1 &1275545574278692206 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 149271041750455544, guid: b5f92c26506b5c34eac0211dd5a9d59a, type: 3}
+  m_PrefabInstance: {fileID: 1414680904973560214}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6172020040939890681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1275545574278692206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 283f73af9051bb84e97e0aa8715dd4f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  homeWoodCount: 0
+  homeStoneCount: 0
+  homeCoalCount: 0
