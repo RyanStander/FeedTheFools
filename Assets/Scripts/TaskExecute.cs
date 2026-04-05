@@ -4,12 +4,10 @@ using UnityEngine;
 
 public class TaskExecute : MonoBehaviour
 {
-    public Caveman caveman;
-
-    void Start()
-    {
-        
-    }
+    public Caveman currentSelectedCaveman;
+    public Transform woodResourcePos;
+    public Transform stoneResourcePos;
+    public Transform coalResourcePos;
 
     void Update()
     {
@@ -22,8 +20,28 @@ public class TaskExecute : MonoBehaviour
             
             if (hit.collider != null && hit.collider.gameObject.CompareTag("caveman"))
             {
-                caveman = hit.collider.gameObject.GetComponent<Caveman>();
-                caveman.MoveToTarget(caveman.treeResourceTestPos.position);
+                currentSelectedCaveman = hit.collider.gameObject.GetComponent<Caveman>();
+                Debug.Log("Caveman selected. Press: 1=Wood, 2=Stone, 3=Coal, 4=Breed");
+            }
+        }
+
+        if (currentSelectedCaveman != null)
+        {
+            if(Input.GetKeyDown(KeyCode.Alpha1) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            {
+                currentSelectedCaveman.SetGatheringTask(woodResourcePos.position, Caveman.ResourceType.Wood);
+            }
+            if(Input.GetKeyDown(KeyCode.Alpha2) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            {
+                currentSelectedCaveman.SetGatheringTask(stoneResourcePos.position, Caveman.ResourceType.Stone);
+            }
+            if(Input.GetKeyDown(KeyCode.Alpha3) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            {
+                currentSelectedCaveman.SetGatheringTask(coalResourcePos.position, Caveman.ResourceType.Coal);
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha4) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            {
+                currentSelectedCaveman.SetBreedingTask();
             }
         }
     }
