@@ -5,19 +5,16 @@ using UnityEngine;
 public class TaskExecute : MonoBehaviour
 {
     public Caveman currentSelectedCaveman;
-    public Transform woodResourcePos;
-    public Transform stoneResourcePos;
-    public Transform coalResourcePos;
 
     void Update()
     {
-        if(Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0))
         {
             Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 worldPos2D = new Vector2(worldPos.x, worldPos.y);
-            
+
             RaycastHit2D hit = Physics2D.Raycast(worldPos2D, Vector2.zero);
-            
+
             if (hit.collider != null && hit.collider.gameObject.CompareTag("caveman"))
             {
                 currentSelectedCaveman = hit.collider.gameObject.GetComponent<Caveman>();
@@ -25,21 +22,21 @@ public class TaskExecute : MonoBehaviour
             }
         }
 
-        if (currentSelectedCaveman != null)
+        if (currentSelectedCaveman != null && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
         {
-            if(Input.GetKeyDown(KeyCode.Alpha1) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            if (Input.GetKeyDown(KeyCode.Alpha1))
             {
-                currentSelectedCaveman.SetGatheringTask(woodResourcePos.position, Caveman.ResourceType.Wood);
+                currentSelectedCaveman.SetGatheringTask(Vector3.zero, Caveman.ResourceType.Wood);
             }
-            if(Input.GetKeyDown(KeyCode.Alpha2) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            if (Input.GetKeyDown(KeyCode.Alpha2))
             {
-                currentSelectedCaveman.SetGatheringTask(stoneResourcePos.position, Caveman.ResourceType.Stone);
+                currentSelectedCaveman.SetGatheringTask(Vector3.zero, Caveman.ResourceType.Stone);
             }
-            if(Input.GetKeyDown(KeyCode.Alpha3) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-                currentSelectedCaveman.SetGatheringTask(coalResourcePos.position, Caveman.ResourceType.Coal);
+                currentSelectedCaveman.SetGatheringTask(Vector3.zero, Caveman.ResourceType.Coal);
             }
-            if (Input.GetKeyDown(KeyCode.Alpha4) && !currentSelectedCaveman.isMoving && currentSelectedCaveman.state == Caveman.CavemanState.Idle)
+            if (Input.GetKeyDown(KeyCode.Alpha4))
             {
                 currentSelectedCaveman.SetBreedingTask();
             }
