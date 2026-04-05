@@ -5,11 +5,7 @@ using UnityEngine;
 public class TaskExecute : MonoBehaviour
 {
     public Caveman caveman;
-
-    void Start()
-    {
-        
-    }
+    public Transform woodResourcePos;
 
     void Update()
     {
@@ -23,7 +19,11 @@ public class TaskExecute : MonoBehaviour
             if (hit.collider != null && hit.collider.gameObject.CompareTag("caveman"))
             {
                 caveman = hit.collider.gameObject.GetComponent<Caveman>();
-                caveman.MoveToTarget(caveman.treeResourceTestPos.position);
+                if (!caveman.isMoving)
+                {
+                    caveman.SetGatheringTask(woodResourcePos.position, Caveman.ResourceType.Wood);
+                }
+               
             }
         }
     }

@@ -1,7 +1,7 @@
+using Navigation;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 public class Caveman : MonoBehaviour
@@ -19,6 +19,7 @@ public class Caveman : MonoBehaviour
         Gathering,
         Hunting,
         Building,
+        Hungry,
         Breeding
     }
     public CavemanTasks task;
@@ -34,9 +35,10 @@ public class Caveman : MonoBehaviour
     public Vector3 targetPosition;
     public Transform homePosition;
 
-    private bool isMoving = false;
+    public bool isMoving = false;
     public bool arrivedToTarget;
-    [SerializeField] private float moveSpeed = 2;
+    [SerializeField] private float arrivalDistance = 0.5f;
+    [SerializeField] private int maxCarryCapacity = 3;
 
     public int woodCount = 0;
     public int stoneCount = 0;
@@ -45,24 +47,52 @@ public class Caveman : MonoBehaviour
     public Transform treeResourceTestPos;
     public bool isPerformingTask;
     private ResourceType currentHarvestResource;
+    private bool returningHome = false;
+    public CavemanNav nav;
+
+    public bool isHungry = false;
+    public float hungerMeter = 100;
 
     void Start()
     {
-        
+        hungerMeter = 100;
+        nav = GetComponent<CavemanNav>();
+        state = CavemanState.Idle;
     }
 
     void Update()
     {
-        if (isMoving)
+        hungerMeter -= Time.deltaTime;
+        if (hungerMeter <= 0)
         {
-            transform.position = Vector3.MoveTowards(transform.position, targetPosition, Time.deltaTime * moveSpeed);
+            hungerMeter = 0;
+            isHungry = true;
+        }
 
-            if (Vector3.Distance(transform.position, targetPosition) < 0.01f)
+        if (isMoving && !arrivedToTarget)
+        {
+            if (Vector3.Distance(transform.position, targetPosition) < arrivalDistance)
             {
                 isMoving = false;
                 arrivedToTarget = true;
-                ExecuteTask(task);
+                
+                if (returningHome)
+                {
+                    DepositResources();
+                    ResetState();
+                    returningHome = false;
+                }
+                else
+                {
+                    ExecuteTask(task);
+                }
             }
+        }
+
+        if(isHungry && state != CavemanState.PerformingTask)
+        {
+            task = CavemanTasks.Hungry;
+            Debug.Log("Caveman is hungry!");
         }
     }
 
@@ -85,26 +115,22 @@ public class Caveman : MonoBehaviour
         }
     }
 
-    public void MoveToTarget(Vector3 newTargetPosition)
-    {
-        targetPosition = newTargetPosition;
-        isMoving = true;
-        state = CavemanState.Walking;
-        arrivedToTarget = false;
-    }
-
-    public void SetGatheringTask(Vector3 targetPos, ResourceType resource) //i really wanted this to be dynamic and flexible for the resources we end up using, call this on button press perhaps and pass in the resource type and target position for that resource
+    public void SetGatheringTask(Vector3 targetPos, ResourceType resource)
     {
         task = CavemanTasks.Gathering;
         currentHarvestResource = resource;
-        MoveToTarget(targetPos);
+        targetPosition = targetPos;
+        isMoving = true;
+        state = CavemanState.Walking;
+        arrivedToTarget = false;
+        nav.GoToPosition(targetPos);
     }
 
     private IEnumerator GatheringTask(ResourceType resource)
     {
         isPerformingTask = true;
-        state= CavemanState.PerformingTask;
-        yield return HarvestResource(resource, 3, 2f);
+        state = CavemanState.PerformingTask;
+        yield return HarvestResource(resource, 2f);
         isPerformingTask = false;
         ReturnHome();
     }
@@ -135,39 +161,34 @@ public class Caveman : MonoBehaviour
 
     public void ReturnHome()
     {
-        MoveToTarget(homePosition.position);
+        targetPosition = homePosition.position;
+        isMoving = true;
         state = CavemanState.Walking;
-        if (this.transform.position == homePosition.position)
-        {
-            //reset task and state
-            task = CavemanTasks.Gathering; //default to gathering for now we can change this later when we have more tasks
-            state = CavemanState.Idle;
-            isMoving = false;
-            isPerformingTask = false;
-        }
+        arrivedToTarget = false;
+        returningHome = true;
+        nav.GoToPosition(homePosition.position);
     }
 
-    private IEnumerator HarvestResource(ResourceType resourceType, int limit, float harvestTime)
+    private void ResetState()
     {
-        while(GetResourceCount(resourceType) < limit) 
+        task = CavemanTasks.Gathering;
+        state = CavemanState.Idle;
+        isMoving = false;
+        isPerformingTask = false;
+    }
+
+    private int GetTotalCarry()
+    {
+        return woodCount + stoneCount + coalCount;
+    }
+
+    private IEnumerator HarvestResource(ResourceType resourceType, float harvestTime)
+    {
+        while (GetTotalCarry() < maxCarryCapacity)
         {
             yield return new WaitForSeconds(harvestTime);
+            Debug.Log("harvested 1 resource");
             AddResource(resourceType, 1);
-        }
-    }
-
-    private int GetResourceCount(ResourceType resourceType)
-    {
-        switch(resourceType)
-        {
-            case ResourceType.Wood:
-                return woodCount;
-            case ResourceType.Stone:
-                return stoneCount;
-            case ResourceType.Coal:
-                return coalCount;
-            default:
-                return 0;
         }
     }
 
@@ -185,5 +206,14 @@ public class Caveman : MonoBehaviour
                 coalCount += amount;
                 break;
         }
+    }
+
+    public void DepositResources()
+    {
+        HomeManager.Instance.AddResources(woodCount, stoneCount, coalCount);
+        Debug.Log("deposited resources wood: " + woodCount + ", stone: " + stoneCount + ", coal: " + coalCount);
+        woodCount = 0;
+        stoneCount = 0;
+        coalCount = 0;
     }
 }
